@@ -1,6 +1,7 @@
 package com.prototype.hackyeah2018;
 
 import java.sql.Time;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.prototype.hackyeah2018.db.AppDatabase;
@@ -20,6 +21,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity {
@@ -43,30 +46,44 @@ public class MainActivity extends AppCompatActivity {
         new FillDatabaseTask().execute();
 
         new GetAllMedicinesTask().execute();
-
+        final List<Medicine> matchedMedicines = new ArrayList<>();
 
 
         final Button takePicture= findViewById(R.id.buttonPicture);
+
+        final AutoCompleteTextView suggestions = findViewById(R.id.autoCompleteTextView);
 
         takePicture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(),ReaderCaptureActivity.class);
+                matchedMedicines.clear();
                 startActivity(intent);
             }
         });
 
         if (getIntent().getStringArrayExtra("Array")!=null){
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             String[] textArray = getIntent().getStringArrayExtra("Array");
             for (int i = 0;i<textArray.length;i++){
                 for (int j = 0 ;j<medicineList.size();j++){
                     System.out.println("MainActivity: " + i + " " + textArray[i]);
                     if (medicineList.get(j).getName().toLowerCase().contains(textArray[i].toLowerCase())){
                         System.out.println("Found: " + textArray[i] + " in " + medicineList.get(j).getName());
-                        break;
+                        matchedMedicines.add(medicineList.get(j));
                     }
                 }
             }
+            ArrayAdapter<Medicine> adapter = new ArrayAdapter<>(this,R.layout.one_suggest_item,matchedMedicines);
+            suggestions.setAdapter(adapter);
+
+
+
+
         }
     }
 

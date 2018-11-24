@@ -16,19 +16,17 @@
         android:orientation="horizontal"
         android:layout_weight="0.05">
 
-        <EditText
-            android:id="@+id/editText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <AutoCompleteTextView
+            android:id="@+id/autoCompleteTextView"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="0.7"
-            android:ems="10"
-            android:inputType="textPersonName"
             android:text="@string/podaj_nazwe_leku" />
 
         <Button
             android:id="@+id/buttonPicture"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="0.3"
             android:text="@string/picture" />
     </LinearLayout>
