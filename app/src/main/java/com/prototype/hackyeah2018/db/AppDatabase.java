@@ -5,7 +5,6 @@ import com.prototype.hackyeah2018.dao.PharmacyDao;
 import com.prototype.hackyeah2018.dao.PharmacyWithMedicinesDao;
 import com.prototype.hackyeah2018.model.Medicine;
 import com.prototype.hackyeah2018.model.Pharmacy;
-import com.prototype.hackyeah2018.model.PharmacyWithMedicines;
 
 import android.arch.persistence.room.Database;
 import android.arch.persistence.room.RoomDatabase;
