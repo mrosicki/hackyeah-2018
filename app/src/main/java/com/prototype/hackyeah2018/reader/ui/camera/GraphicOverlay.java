@@ -121,6 +121,10 @@ public class GraphicOverlay<T extends GraphicOverlay.Graphic> extends View {
         postInvalidate();
     }
 
+    public Set<T> getGraphics() {
+        return graphics;
+    }
+
     /**
      * Adds a graphic to the overlay.
      */
