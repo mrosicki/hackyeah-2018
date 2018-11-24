@@ -22,7 +22,7 @@ public class ReaderDetectorProcessor implements Detector.Processor<TextBlock>  {
         for (int i = 0; i < items.size(); ++i) {
             TextBlock item = items.valueAt(i);
             if (item != null && item.getValue() != null) {
-                Log.d("OcrDetectorProcessor", "Text detected! " + item.getValue());
+                Log.d("ReaderDetectorProcessor", "Text detected! " + item.getValue());
                 ReaderGraphic graphic = new ReaderGraphic(graphicOverlay, item);
                 graphicOverlay.add(graphic);
             }

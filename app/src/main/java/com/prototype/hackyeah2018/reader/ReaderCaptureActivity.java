@@ -22,6 +22,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -34,7 +35,10 @@ import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public final class ReaderCaptureActivity extends AppCompatActivity {
     private static final String TAG = "ReaderCaptureActivity";
@@ -71,7 +75,6 @@ public final class ReaderCaptureActivity extends AppCompatActivity {
 
         preview = (CameraSourcePreview) findViewById(R.id.preview);
         graphicOverlay = (GraphicOverlay<ReaderGraphic>) findViewById(R.id.graphicOverlay);
-
         // Set good defaults for capturing text.
         boolean autoFocus = true;
         boolean useFlash = false;
@@ -106,6 +109,31 @@ public final class ReaderCaptureActivity extends AppCompatActivity {
                     }
                 };
         tts = new TextToSpeech(this.getApplicationContext(), listener);
+        final Button capture = findViewById(R.id.button);
+
+        capture.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Set<ReaderGraphic> graphicSet = graphicOverlay.getGraphics();
+                List<ReaderGraphic> graphicList = new ArrayList<>(graphicSet);
+                StringBuilder allText = new StringBuilder();
+
+                for (int i = 0; i < graphicList.size(); i++) {
+
+                    allText.append(graphicList.get(i).getTextBlock().getValue().trim());
+                    allText.append(" ");
+                }
+                String allTextCleaned = allText.toString().replace("\n"," ");
+                String[] allTextArray = allTextCleaned.split(" ");
+                for (int i = 0;i<allTextArray.length;i++){
+                    System.out.println("TEST :" + i + ": "+ allTextArray[i]);
+                }
+                System.out.print("done");
+
+            }
+        });
+
+
     }
 
     /**
