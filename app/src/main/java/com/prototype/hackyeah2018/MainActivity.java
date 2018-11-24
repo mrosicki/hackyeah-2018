@@ -1,7 +1,7 @@
 package com.prototype.hackyeah2018;
 
-import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.prototype.hackyeah2018.db.AppDatabase;
@@ -10,6 +10,8 @@ import com.prototype.hackyeah2018.model.Coordinate;
 import com.prototype.hackyeah2018.model.Medicine;
 import com.prototype.hackyeah2018.model.Pharmacy;
 import com.prototype.hackyeah2018.reader.ReaderCaptureActivity;
+import com.prototype.hackyeah2018.search.ISearchEngine;
+import com.prototype.hackyeah2018.search.SimpleSearchEngine;
 import com.prototype.hackyeah2018.service.IMedicineService;
 import com.prototype.hackyeah2018.service.IPharmacyService;
 import com.prototype.hackyeah2018.service.MedicineService;
@@ -33,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     private IPharmacyService pharmacyService;
 
-    private List<Medicine> medicineList;
+    private List<Medicine> medicineList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
         final List<Medicine> matchedMedicines = new ArrayList<>();
 
 
+
         final Button takePicture= findViewById(R.id.buttonPicture);
 
         final AutoCompleteTextView suggestions = findViewById(R.id.autoCompleteTextView);
@@ -62,29 +65,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        if (getIntent().getStringArrayExtra("Array")!=null){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            String[] textArray = getIntent().getStringArrayExtra("Array");
-            for (int i = 0;i<textArray.length;i++){
-                for (int j = 0 ;j<medicineList.size();j++){
-                    System.out.println("MainActivity: " + i + " " + textArray[i]);
-                    if (medicineList.get(j).getName().toLowerCase().contains(textArray[i].toLowerCase())){
-                        System.out.println("Found: " + textArray[i] + " in " + medicineList.get(j).getName());
-                        matchedMedicines.add(medicineList.get(j));
-                    }
-                }
-            }
-            ArrayAdapter<Medicine> adapter = new ArrayAdapter<>(this,R.layout.one_suggest_item,matchedMedicines);
+        String [] queryWords = getIntent().getStringArrayExtra("Array");
+
+        if (queryWords != null) {
+            List<Medicine> foundedMedicines = findMedicines(medicineList, Arrays.asList(queryWords), queryWords.length);
+            ArrayAdapter<Medicine> adapter = new ArrayAdapter<>(this,R.layout.one_suggest_item, foundedMedicines);
             suggestions.setAdapter(adapter);
-
-
-
-
         }
+    }
+
+    private List<Medicine> findMedicines(List<Medicine> medicines, List<String> words, int index) {
+        if (index >= words.size()) {
+            return medicines;
+        }
+        ISearchEngine searchEngine = new SimpleSearchEngine();
+        return findMedicines(searchEngine.search(medicines, words.get(index)), words, index++);
     }
 
     private class GetAllMedicinesTask extends AsyncTask<Void, Void, Void>{
@@ -102,7 +97,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... voids){
-               medicineList = medicineService.getMedicines();
+            medicineList.clear();
+            medicineList.addAll(medicineService.getMedicines());
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
