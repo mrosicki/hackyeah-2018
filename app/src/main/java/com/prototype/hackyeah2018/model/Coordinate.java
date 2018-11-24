@@ -1,24 +1,41 @@
 package com.prototype.hackyeah2018.model;
 
+import java.util.Objects;
+
 public class Coordinate {
 
-    private Double longtitude;
+    private final Double longtitude;
 
-    private Double lattitude;
+    private final Double lattitude;
+
+    public Coordinate(Double longtitude, Double lattitude) {
+        this.longtitude = longtitude;
+        this.lattitude = lattitude;
+    }
 
     public Double getLongtitude() {
         return longtitude;
-    }
-
-    public void setLongtitude(Double longtitude) {
-        this.longtitude = longtitude;
     }
 
     public Double getLattitude() {
         return lattitude;
     }
 
-    public void setLattitude(Double lattitude) {
-        this.lattitude = lattitude;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Coordinate that = (Coordinate) o;
+        return Objects.equals(longtitude, that.longtitude) &&
+                Objects.equals(lattitude, that.lattitude);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(longtitude, lattitude);
     }
 }

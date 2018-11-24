@@ -1,10 +1,9 @@
 package com.prototype.hackyeah2018.model;
 
 import java.util.List;
+import java.util.Objects;
 
 import android.arch.persistence.room.Embedded;
-import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.Relation;
 
 public class PharmacyWithMedicines {
@@ -12,7 +11,8 @@ public class PharmacyWithMedicines {
     @Embedded
     private Pharmacy pharmacy;
 
-    public List<Medicine> medicines;
+    @Relation(entity = Medicine.class, parentColumn = "id", entityColumn = "pharmacyId")
+    private List<Medicine> medicines;
 
     public Pharmacy getPharmacy() {
         return pharmacy;
@@ -28,5 +28,23 @@ public class PharmacyWithMedicines {
 
     public void setMedicines(List<Medicine> medicines) {
         this.medicines = medicines;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PharmacyWithMedicines that = (PharmacyWithMedicines) o;
+        return Objects.equals(pharmacy, that.pharmacy) &&
+                Objects.equals(medicines, that.medicines);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pharmacy, medicines);
     }
 }

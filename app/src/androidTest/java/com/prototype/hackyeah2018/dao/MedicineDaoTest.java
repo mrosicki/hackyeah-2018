@@ -40,7 +40,7 @@ public class MedicineDaoTest {
         medicine.setId(1L);
         medicine.setName("medicine");
         medicine.setAvailable(true);
-        //        medicine.setPharmacyId(null);
+        medicine.setPharmacyId(null);
 
         medicineDao.insert(medicine);
         medicineDao.delete(medicine);
@@ -53,7 +53,7 @@ public class MedicineDaoTest {
         medicine.setId(1L);
         medicine.setName("medicine");
         medicine.setAvailable(true);
-//        medicine.setPharmacyId(null);
+        medicine.setPharmacyId(null);
 
         medicineDao.insert(medicine);
 
@@ -66,11 +66,13 @@ public class MedicineDaoTest {
         m1.setId(1L);
         m1.setName("m1");
         m1.setAvailable(true);
+        m1.setPharmacyId(null);
 
         Medicine m2 = new Medicine();
         m2.setId(2L);
         m2.setName("m2");
         m2.setAvailable(true);
+        m2.setPharmacyId(null);
 
         List<Medicine> medicines = new ArrayList<>(Arrays.asList(m1, m2));
 

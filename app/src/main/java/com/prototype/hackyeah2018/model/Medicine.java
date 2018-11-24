@@ -8,7 +8,7 @@ import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.PrimaryKey;
 
-@Entity(/*foreignKeys = @ForeignKey(entity = Pharmacy.class, parentColumns = "id", childColumns = "pharmacyId", onDelete = CASCADE)*/)
+@Entity(foreignKeys = @ForeignKey(entity = Pharmacy.class, parentColumns = "id", childColumns = "pharmacyId", onDelete = CASCADE))
 public class Medicine {
 
     @PrimaryKey(autoGenerate = true)
@@ -18,8 +18,8 @@ public class Medicine {
 
     private Boolean available;
 
-//    private Long pharmacyId;
-//
+    private Long pharmacyId;
+
     public Long getId() {
         return id;
     }
@@ -44,13 +44,13 @@ public class Medicine {
         this.available = available;
     }
 
-//    public Long getPharmacyId() {
-//        return pharmacyId;
-//    }
-//
-//    public void setPharmacyId(Long pharmacyId) {
-//        this.pharmacyId = pharmacyId;
-//    }
+    public Long getPharmacyId() {
+        return pharmacyId;
+    }
+
+    public void setPharmacyId(Long pharmacyId) {
+        this.pharmacyId = pharmacyId;
+    }
 
 
     @Override
