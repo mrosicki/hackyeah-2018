@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_weight="0.1">
+        android:layout_weight="0.05">
 
         <EditText
             android:id="@+id/editText"
@@ -37,16 +37,13 @@
         android:id="@+id/buttonSearch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="0.1"
+        android:layout_weight="0.05"
         android:text="@string/search" />
 
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="wrap_content"
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="0.8"
-        app:srcCompat="@color/colorAccent"
-        tools:srcCompat="@tools:sample/backgrounds/scenic[11]"
-        android:contentDescription="@string/mapka"/>
+        android:layout_weight="0.9">
+    </FrameLayout>
 
 </LinearLayout>
