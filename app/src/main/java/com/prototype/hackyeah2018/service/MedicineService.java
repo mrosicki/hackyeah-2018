@@ -29,6 +29,11 @@ public class MedicineService implements IMedicineService {
     }
 
     @Override
+    public void insertMedicines(List<Medicine> medicines) {
+        medicineDao.insertAll(medicines);
+    }
+
+    @Override
     public void deleteMedicine(Medicine medicine) {
         this.medicineDao.delete(medicine);
     }

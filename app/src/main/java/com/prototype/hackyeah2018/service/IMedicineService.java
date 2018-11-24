@@ -10,6 +10,8 @@ public interface IMedicineService {
 
     void insertMedicine(Medicine medicine);
 
+    void insertMedicines(List<Medicine> medicines);
+
     void deleteMedicine(Medicine medicine);
 
     List<Medicine> getMedicines();
