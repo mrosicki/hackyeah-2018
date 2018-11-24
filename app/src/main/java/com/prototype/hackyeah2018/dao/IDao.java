@@ -16,9 +16,6 @@ public interface IDao<T> {
     @Delete
     void delete(T object);
 
-    @Delete
-    Integer deleteAll();
-
     @Insert
     void insert(T object);
 
