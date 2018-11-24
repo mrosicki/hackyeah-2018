@@ -27,6 +27,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.prototype.hackyeah2018.MainActivity;
 import com.prototype.hackyeah2018.R;
 import com.prototype.hackyeah2018.reader.ui.camera.CameraSource;
 import com.prototype.hackyeah2018.reader.ui.camera.CameraSourcePreview;
@@ -129,7 +130,9 @@ public final class ReaderCaptureActivity extends AppCompatActivity {
                     System.out.println("TEST :" + i + ": "+ allTextArray[i]);
                 }
                 System.out.print("done");
-
+                Intent intent = new Intent(getApplicationContext(),MainActivity.class);
+                intent.putExtra("Array",allTextArray);
+                startActivity(intent);
             }
         });
 

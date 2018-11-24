@@ -13,4 +13,8 @@
     <string name="ocr_failure">No text captured</string>
     <string name="ocr_error">"Error reading text: %1$s"</string>
     <string name="capture">Capture</string>
+    <string name="picture">Picture</string>
+    <string name="search">Search</string>
+    <string name="mapka">Mapka</string>
+    <string name="podaj_nazwe_leku">Podaj nazwe leku</string>
 </resources>
