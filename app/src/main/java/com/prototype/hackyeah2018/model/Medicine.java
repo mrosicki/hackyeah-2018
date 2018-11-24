@@ -71,4 +71,9 @@ public class Medicine {
     public int hashCode() {
         return Objects.hash(id, name, available);
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
