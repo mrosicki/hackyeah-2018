@@ -8,7 +8,7 @@ import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Query;
 
 @Dao
-public interface PharmacyWithMedicinesDao extends IDao<PharmacyWithMedicines> {
+public interface PharmacyWithMedicinesDao extends IRelationDao<PharmacyWithMedicines> {
 
     @Override
     @Query("SELECT * FROM pharmacy WHERE id = :id")
@@ -17,4 +17,5 @@ public interface PharmacyWithMedicinesDao extends IDao<PharmacyWithMedicines> {
     @Override
     @Query("SELECT * FROM pharmacy")
     List<PharmacyWithMedicines> findAll();
+
 }

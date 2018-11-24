@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import com.prototype.hackyeah2018.db.AppDatabase;
 import com.prototype.hackyeah2018.model.Coordinate;
@@ -14,7 +15,9 @@ import com.prototype.hackyeah2018.model.Pharmacy;
 import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
+import android.support.test.runner.AndroidJUnit4;
 
+@RunWith(AndroidJUnit4.class)
 public class PharmacyDaoTest {
 
     private AppDatabase database;
