@@ -37,6 +37,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
@@ -63,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
 
         initMapView(savedInstanceState);
 
-
         database = AppDatabase.getInstance(this);
         medicineService = new MedicineService(database.getMedicineDao());
         pharmacyService = new PharmacyService(database.getPharmacyDao(), database.getPharmacyWithMedicinesDao());
@@ -75,15 +76,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initSuggestions() {
-        getSuggestions().setOnClickListener(new OnClickListener() {
+        getSuggestions().addTextChangedListener(new TextWatcher() {
             @Override
-            public void onClick(View v) {
-                if (getIntent().getStringArrayExtra("Array") != null) {
-                    new MedicineSearchForSuggestionsTask().execute(getIntent().getStringArrayExtra("Array"));
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String text = "";
+                if (s != null) {
+                    text = s.toString();
                 }
+                new MedicineSearchForSuggestionsTask().execute(text.split(" "));
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
             }
         });
+
+        setTextFromTextRecognition();
     }
+
+    private void setTextFromTextRecognition() {
+        String[] texts = getIntent().getStringArrayExtra("Array");
+        if (texts != null) {
+            StringBuilder builder = new StringBuilder();
+            for (String t : texts) {
+                builder.append(t).append(" ");
+            }
+            getSuggestions().setText(builder.toString());
+        }
+    }
+
+
     private void initSearchButton() {
         getSearchButton().setOnClickListener(new OnClickListener() {
             @Override
