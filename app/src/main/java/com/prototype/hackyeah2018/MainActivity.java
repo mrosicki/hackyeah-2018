@@ -182,15 +182,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void fillDatabase() {
-            Pharmacy pharmacy = new Pharmacy();
-            pharmacy.setId(1L);
-            pharmacy.setName("DOZ");
-            pharmacy.setCoordinate(new Coordinate(1.0, 1.0));
 
-            List<Medicine> medicines = MedicineGenerator.getMedicines(pharmacy);
+            Pharmacy p1 = new Pharmacy();
+            p1.setId(1L);
+            p1.setName("DOZ1");
+            p1.setCoordinate(new Coordinate(52.2901142, 20.9818041));
 
-            pharmacyService.insertPharmacy(pharmacy);
-            medicineService.insertMedicines(medicines);
+            List<Medicine> m1 = MedicineGenerator.getMedicines(p1);
+
+            Pharmacy p2 = new Pharmacy();
+            p2.setId(2L);
+            p2.setName("DOZ2");
+            p2.setCoordinate(new Coordinate(52.2901038, 20.9818041));
+
+            List<Medicine> m2 = MedicineGenerator.getMedicines(p1);
+
+            pharmacyService.insertPharmacy(p1);
+            medicineService.insertMedicines(m1.subList(0, m1.size() / 2));
+
+            pharmacyService.insertPharmacy(p2);
+            medicineService.insertMedicines(m2.subList(m2.size() / 2, m2.size() - 1));
         }
     }
 }
