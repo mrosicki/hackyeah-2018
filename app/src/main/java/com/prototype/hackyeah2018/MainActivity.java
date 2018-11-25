@@ -3,12 +3,17 @@ package com.prototype.hackyeah2018;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.prototype.hackyeah2018.db.AppDatabase;
 import com.prototype.hackyeah2018.inserter.MedicineGenerator;
 import com.prototype.hackyeah2018.model.Coordinate;
@@ -27,6 +32,7 @@ import android.Manifest.permission;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -41,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
 
     private AppDatabase database;
 
+    private FusedLocationProviderClient mFusedLocationClient;
+
     private IMedicineService medicineService;
 
     private IPharmacyService pharmacyService;
@@ -51,8 +59,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         initMapView(savedInstanceState);
+
 
         database = AppDatabase.getInstance(this);
         medicineService = new MedicineService(database.getMedicineDao());
@@ -68,7 +78,9 @@ public class MainActivity extends AppCompatActivity {
         getSuggestions().setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                new MedicineSearchForSuggestionsTask().execute(getIntent().getStringArrayExtra("Array"));
+                if (getIntent().getStringArrayExtra("Array") != null) {
+                    new MedicineSearchForSuggestionsTask().execute(getIntent().getStringArrayExtra("Array"));
+                }
             }
         });
     }
@@ -190,27 +202,22 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 googleMap.setMyLocationEnabled(true);
-//                new PrepareAllPharmaciesMarkersAsyncTask().execute();
+                mFusedLocationClient.getLastLocation().addOnSuccessListener(MainActivity.this,
+                        new OnSuccessListener<Location>() {
+                            @Override
+                            public void onSuccess(Location location) {
+                                if (location != null) {
+                                    CameraPosition cameraPosition = new CameraPosition.Builder().target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(12).build();
+                                    MainActivity.this.googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                                    MainActivity.this.googleMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(location.getLatitude(), location.getLongitude()))
+                                            .title("tutaj"));
+                                }
+                            }
+                        });
             }
         });
     }
-
-//    private class PrepareAllPharmaciesMarkersAsyncTask extends AsyncTask<Void, Void, Void> {
-//
-//        @Override
-//        protected Void doInBackground(Void... voids) {
-//            for (Pharmacy pharmacy : loadPharmacies()) {
-//                googleMap.addMarker(new MarkerOptions()
-//                        .position(new LatLng(pharmacy.getCoordinate().getLattitude(),
-//                                pharmacy.getCoordinate().getLongtitude()))
-//                        .title(pharmacy.getName())
-//
-//                );
-//            }
-//            return null;
-//        }
-//    }
-
 
     private List<Pharmacy> loadPharmacies() {
         return pharmacyService.getPharmacies();
