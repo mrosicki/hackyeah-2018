@@ -3,17 +3,32 @@ package com.prototype.hackyeah2018;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.maps.android.PolyUtil;
 import com.prototype.hackyeah2018.db.AppDatabase;
 import com.prototype.hackyeah2018.inserter.MedicineGenerator;
 import com.prototype.hackyeah2018.model.Coordinate;
@@ -29,9 +44,10 @@ import com.prototype.hackyeah2018.service.MedicineService;
 import com.prototype.hackyeah2018.service.PharmacyService;
 
 import android.Manifest.permission;
-import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -56,6 +72,10 @@ public class MainActivity extends AppCompatActivity {
     private IPharmacyService pharmacyService;
 
     private GoogleMap googleMap;
+
+    private List<Polyline> currentPolylines = new ArrayList<>();
+
+    private List<Marker> pharmaciesMarkers = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,6 +136,10 @@ public class MainActivity extends AppCompatActivity {
         getSearchButton().setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                for (Polyline polyline : currentPolylines) {
+                    polyline.remove();
+                }
+                currentPolylines.clear();
                 new PharmacySearchForGoogleMapsTask().execute(getSuggestions().getText().toString());
             }
         });
@@ -144,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(List<Pharmacy> pharmacies) {
             for (Pharmacy pharmacy : pharmacies) {
-                googleMap.addMarker(new MarkerOptions()
+               googleMap.addMarker(new MarkerOptions()
                         .position(new LatLng(pharmacy.getCoordinate().getLattitude(),
                                 pharmacy.getCoordinate().getLongtitude()))
                         .title(pharmacy.getName()));
@@ -171,6 +195,69 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(List<Medicine> medicines) {
             getSuggestions().setAdapter(new ArrayAdapter<>(MainActivity.this, R.layout.one_suggest_item, medicines));
         }
+    }
+
+    void createRouteBetweenPoints(LatLng src, LatLng dest) {
+        String url = "https://maps.googleapis.com/maps/api/directions/json?origin=" +
+                + src.latitude + "," + src.longitude
+                + "&destination="
+                + dest.latitude + "," + dest.longitude
+                + "&mode=walking"
+                + "&key=" + getApiKey();
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+
+        StringRequest request = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+
+                        try {
+                            List<List<LatLng>> path = new ArrayList<>();
+                            JSONObject json = new JSONObject(response);
+                            JSONArray routes = json.getJSONArray("routes");
+                            JSONArray legs = routes.getJSONObject(0).getJSONArray("legs");
+                            JSONArray steps = legs.getJSONObject(0).getJSONArray("steps");
+
+                            for (int i = 0; i < steps.length(); i++) {
+                                String points = steps.getJSONObject(i).getJSONObject("polyline").getString("points");
+                                path.add(PolyUtil.decode(points));
+                            }
+
+                            for (int i = 0; i < path.size(); i++) {
+                                currentPolylines.add(googleMap
+                                        .addPolyline(new PolylineOptions().addAll(path.get(i)).color(Color.RED)));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+            }
+        });
+
+        queue.add(request);
+
+
+    }
+
+    private String getApiKey() {
+        try {
+            ApplicationInfo appInfo = getPackageManager().getApplicationInfo(
+                    getPackageName(), PackageManager.GET_META_DATA);
+            if (appInfo.metaData != null) {
+                return appInfo.metaData.getString("com.google.android.maps.v2.API_KEY");
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            // if we can’t find it in the manifest, just return null
+        }
+
+        return "";
     }
 
     private List<Medicine> loadMedicines() {
@@ -214,7 +301,7 @@ public class MainActivity extends AppCompatActivity {
 
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
-            public void onMapReady(GoogleMap googleMap) {
+            public void onMapReady(final GoogleMap googleMap) {
                 MainActivity.this.googleMap = googleMap;
                 if (ActivityCompat.checkSelfPermission(MainActivity.this,
                         permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat
@@ -237,12 +324,20 @@ public class MainActivity extends AppCompatActivity {
                                 if (location != null) {
                                     CameraPosition cameraPosition = new CameraPosition.Builder().target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(12).build();
                                     MainActivity.this.googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-                                    MainActivity.this.googleMap.addMarker(new MarkerOptions()
-                                            .position(new LatLng(location.getLatitude(), location.getLongitude()))
-                                            .title("tutaj"));
                                 }
                             }
                         });
+
+                googleMap.setOnMarkerClickListener(new OnMarkerClickListener() {
+                    @Override
+                    public boolean onMarkerClick(Marker marker) {
+                        Location location = googleMap.getMyLocation();
+                        if (location != null) {
+                            createRouteBetweenPoints(new LatLng(location.getLatitude(), location.getLongitude()), marker.getPosition());
+                        }
+                        return false;
+                    }
+                });
             }
         });
     }
@@ -256,12 +351,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class FillDatabaseTask extends AsyncTask<Void, Void, Void> {
-        private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
 
         @Override
         protected Void doInBackground(Void... voids) {
             fillDatabase();
-//            dialog.show();
             return null;
         }
 
@@ -282,15 +375,10 @@ public class MainActivity extends AppCompatActivity {
             List<Medicine> m2 = MedicineGenerator.getMedicines(p2);
 
             pharmacyService.insertPharmacy(p1);
-            medicineService.insertMedicines(m1.subList(0, m1.size() / 2));
+            medicineService.insertMedicines(m1.subList(0, m1.size() / 2 - 1));
 
             pharmacyService.insertPharmacy(p2);
             medicineService.insertMedicines(m2.subList(m2.size() / 2, m2.size() - 1));
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-//            dialog.dismiss();
         }
     }
 }
