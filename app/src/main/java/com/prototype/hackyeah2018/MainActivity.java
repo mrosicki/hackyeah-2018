@@ -1,7 +1,6 @@
 package com.prototype.hackyeah2018;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -17,6 +16,8 @@ import com.prototype.hackyeah2018.model.Medicine;
 import com.prototype.hackyeah2018.model.Pharmacy;
 import com.prototype.hackyeah2018.model.PharmacyWithMedicines;
 import com.prototype.hackyeah2018.reader.ReaderCaptureActivity;
+import com.prototype.hackyeah2018.search.ISearchEngine;
+import com.prototype.hackyeah2018.search.SimpleSearchEngine;
 import com.prototype.hackyeah2018.service.IMedicineService;
 import com.prototype.hackyeah2018.service.IPharmacyService;
 import com.prototype.hackyeah2018.service.MedicineService;
@@ -31,6 +32,7 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -42,11 +44,6 @@ public class MainActivity extends AppCompatActivity {
     private IMedicineService medicineService;
 
     private IPharmacyService pharmacyService;
-
-    private List<Medicine> medicineList;
-    private List<Pharmacy> pharmacyToMark = null;
-
-    private List<PharmacyWithMedicines> listOfPharmaciesWithMedicines = null;
 
     private GoogleMap googleMap;
 
@@ -60,81 +57,108 @@ public class MainActivity extends AppCompatActivity {
         database = AppDatabase.getInstance(this);
         medicineService = new MedicineService(database.getMedicineDao());
         pharmacyService = new PharmacyService(database.getPharmacyDao(), database.getPharmacyWithMedicinesDao());
+
         new FillDatabaseTask().execute();
+        initTakePictureButton();
+        initSearchButton();
+        initSuggestions();
+    }
 
-        new GetAllMedicinesTask().execute();
-        new GetPharmaciesWithMedicineTask().execute();
+    private void initSuggestions() {
+        getSuggestions().setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new MedicineSearchForSuggestionsTask().execute(getIntent().getStringArrayExtra("Array"));
+            }
+        });
+    }
+    private void initSearchButton() {
+        getSearchButton().setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new PharmacySearchForGoogleMapsTask().execute(getSuggestions().getText().toString());
+            }
+        });
+    }
 
+    private class PharmacySearchForGoogleMapsTask extends AsyncTask<String, Void, List<Pharmacy>> {
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        @Override
+        protected List<Pharmacy> doInBackground(String... medicineNames) {
+            List<PharmacyWithMedicines> pharmacyWithMedicinesList = loadPharmaciesWithMedicines();
+
+            List<Pharmacy> matchedPharmacies = new ArrayList<>();
+
+            if(medicineNames.length == 1) {
+                ISearchEngine searchEngine = new SimpleSearchEngine();
+                for (PharmacyWithMedicines pharmacyWithMedicines : pharmacyWithMedicinesList) {
+                    if(!searchEngine.search(pharmacyWithMedicines.getMedicines(), medicineNames[0]).isEmpty()) {
+                        matchedPharmacies.add(pharmacyWithMedicines.getPharmacy());
+                    }
+                }
+            }
+
+            return matchedPharmacies;
         }
-        final List<Medicine> matchedMedicines = new ArrayList<>();
+
+        @Override
+        protected void onPostExecute(List<Pharmacy> pharmacies) {
+            for (Pharmacy pharmacy : pharmacies) {
+                googleMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(pharmacy.getCoordinate().getLattitude(),
+                                pharmacy.getCoordinate().getLongtitude()))
+                        .title(pharmacy.getName()));
+            }
+        }
+    }
+
+    private  class MedicineSearchForSuggestionsTask extends AsyncTask<String, Void, List<Medicine>> {
+
+        @Override
+        protected List<Medicine> doInBackground(String... queries) {
+            List<Medicine> medicines = loadMedicines();
+            if (queries.length > 0) {
+                ISearchEngine searchEngine  = new SimpleSearchEngine();
+
+                for (String query : queries) {
+                    medicines = searchEngine.search(medicines, query);
+                }
+            }
+            return medicines;
+        }
+
+        @Override
+        protected void onPostExecute(List<Medicine> medicines) {
+            getSuggestions().setAdapter(new ArrayAdapter<>(MainActivity.this, R.layout.one_suggest_item, medicines));
+        }
+    }
+
+    private List<Medicine> loadMedicines() {
+        return medicineService.getMedicines();
+    }
 
 
-
-
-        final Button takePicture= findViewById(R.id.buttonPicture);
-
-        final Button searchButton = findViewById(R.id.buttonSearch);
-
-        final AutoCompleteTextView suggestions = findViewById(R.id.autoCompleteTextView);
-
-        takePicture.setOnClickListener(new View.OnClickListener() {
+    private void initTakePictureButton() {
+        getTakePictureButton().setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(), ReaderCaptureActivity.class);
-                matchedMedicines.clear();
                 startActivity(intent);
             }
         });
 
-        if (getIntent().getStringArrayExtra("Array") != null) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            String[] textArray = getIntent().getStringArrayExtra("Array");
-            for (int i = 0; i < textArray.length; i++) {
-                for (int j = 0; j < medicineList.size(); j++) {
-                    System.out.println("MainActivity: " + i + " " + textArray[i]);
-                    if (medicineList.get(j).getName().toLowerCase().contains(textArray[i].toLowerCase())) {
-                        System.out.println("Found: " + textArray[i] + " in " + medicineList.get(j).getName());
-                        matchedMedicines.add(medicineList.get(j));
-                    }
-                }
-            }
-            ArrayAdapter<Medicine> adapter = new ArrayAdapter<>(this, R.layout.one_suggest_item, matchedMedicines);
-            suggestions.setAdapter(adapter);
-        }
-        searchButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view) {
-                List<Pharmacy> results = new ArrayList<Pharmacy>();
+    }
 
-                String pattern = suggestions.getText().toString();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                for (int i = 0;i<listOfPharmaciesWithMedicines.size();i++){
-                    List<Medicine> listOfMedicines = listOfPharmaciesWithMedicines.get(i).getMedicines();
-                    for (int j = 0;j<listOfMedicines.size();j++){
-                        if (listOfMedicines.get(j).getName().toString().equals(pattern)){
-                            if (listOfMedicines.get(j).getAvailable()){
-                                results.add(listOfPharmaciesWithMedicines.get(i).getPharmacy());
-                            }
-                        }
-                    }
-                }
-                pharmacyToMark = results;
-            }
-        });
+    private Button getTakePictureButton() {
+        return findViewById(R.id.buttonPicture);
+    }
 
+    private Button getSearchButton() {
+        return findViewById(R.id.buttonSearch);
+    }
+
+    private AutoCompleteTextView getSuggestions() {
+        return findViewById(R.id.autoCompleteTextView);
     }
 
     private void initMapView(Bundle savedInstanceState) {
@@ -166,75 +190,43 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 googleMap.setMyLocationEnabled(true);
-
-                for (LatLng latLng : getMapPinsLocations()) {
-                    googleMap.addMarker(new MarkerOptions().position(latLng));
-                }
+//                new PrepareAllPharmaciesMarkersAsyncTask().execute();
             }
         });
     }
 
-    private List<LatLng> getMapPinsLocations() {
-        List<LatLng> latLngs = new ArrayList<>();
-        for (Pharmacy pharmacy : loadPharmacies()) {
-            latLngs.add(new LatLng(pharmacy.getCoordinate().getLattitude(), pharmacy.getCoordinate().getLongtitude()));
-        }
+//    private class PrepareAllPharmaciesMarkersAsyncTask extends AsyncTask<Void, Void, Void> {
+//
+//        @Override
+//        protected Void doInBackground(Void... voids) {
+//            for (Pharmacy pharmacy : loadPharmacies()) {
+//                googleMap.addMarker(new MarkerOptions()
+//                        .position(new LatLng(pharmacy.getCoordinate().getLattitude(),
+//                                pharmacy.getCoordinate().getLongtitude()))
+//                        .title(pharmacy.getName())
+//
+//                );
+//            }
+//            return null;
+//        }
+//    }
 
-        return latLngs;
-    }
-
-
-        private class GetPharmaciesWithMedicineTask extends AsyncTask<Void, Void, Void>{
-
-            @Override
-            protected Void doInBackground(Void... voids) {
-
-                listOfPharmaciesWithMedicines = pharmacyService.getPharmacyWithMedicines();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return null;
-            }
-        }
 
     private List<Pharmacy> loadPharmacies() {
-        return Collections.emptyList();
+        return pharmacyService.getPharmacies();
     }
 
-    private class GetAllMedicinesTask extends AsyncTask<Void, Void, Void>{
-        private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
-        @Override
-        protected void onPreExecute() {
-            this.dialog.setMessage("Matching...");
-            this.dialog.show();
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            this.dialog.dismiss();
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids){
-               medicineList = medicineService.getMedicines();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
+    private List<PharmacyWithMedicines> loadPharmaciesWithMedicines() {
+        return pharmacyService.getPharmacyWithMedicines();
     }
-
-
 
     private class FillDatabaseTask extends AsyncTask<Void, Void, Void> {
+        private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
 
         @Override
         protected Void doInBackground(Void... voids) {
             fillDatabase();
+//            dialog.show();
             return null;
         }
 
@@ -259,6 +251,11 @@ public class MainActivity extends AppCompatActivity {
 
             pharmacyService.insertPharmacy(p2);
             medicineService.insertMedicines(m2.subList(m2.size() / 2, m2.size() - 1));
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+//            dialog.dismiss();
         }
     }
 }

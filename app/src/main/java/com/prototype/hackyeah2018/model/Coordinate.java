@@ -8,9 +8,9 @@ public class Coordinate {
 
     private final Double lattitude;
 
-    public Coordinate(Double longtitude, Double lattitude) {
-        this.longtitude = longtitude;
+    public Coordinate(Double lattitude, Double longtitude) {
         this.lattitude = lattitude;
+        this.longtitude = longtitude;
     }
 
     public Double getLongtitude() {
