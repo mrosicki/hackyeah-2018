@@ -48,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
         new FillDatabaseTask().execute();
 
         new GetAllMedicinesTask().execute();
+        final List<Medicine> matchedMedicines = new ArrayList<>();
+
+
 
         final Button takePicture= findViewById(R.id.buttonPicture);
 
@@ -57,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(),ReaderCaptureActivity.class);
+                matchedMedicines.clear();
                 startActivity(intent);
             }
         });
