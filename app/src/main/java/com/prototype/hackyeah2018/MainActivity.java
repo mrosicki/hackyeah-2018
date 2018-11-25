@@ -9,6 +9,7 @@ import com.prototype.hackyeah2018.inserter.MedicineGenerator;
 import com.prototype.hackyeah2018.model.Coordinate;
 import com.prototype.hackyeah2018.model.Medicine;
 import com.prototype.hackyeah2018.model.Pharmacy;
+import com.prototype.hackyeah2018.model.PharmacyWithMedicines;
 import com.prototype.hackyeah2018.reader.ReaderCaptureActivity;
 import com.prototype.hackyeah2018.service.IMedicineService;
 import com.prototype.hackyeah2018.service.IPharmacyService;
@@ -34,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
     private IPharmacyService pharmacyService;
 
     private List<Medicine> medicineList;
+    private List<Pharmacy> pharmacyToMark = null;
+
+    private List<PharmacyWithMedicines> listOfPharmaciesWithMedicines = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,10 +50,22 @@ public class MainActivity extends AppCompatActivity {
         new FillDatabaseTask().execute();
 
         new GetAllMedicinesTask().execute();
+        new GetPharmaciesWithMedicineTask().execute();
+
+
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         final List<Medicine> matchedMedicines = new ArrayList<>();
 
 
+
+
         final Button takePicture= findViewById(R.id.buttonPicture);
+
+        final Button searchButton = findViewById(R.id.buttonSearch);
 
         final AutoCompleteTextView suggestions = findViewById(R.id.autoCompleteTextView);
 
@@ -81,9 +97,50 @@ public class MainActivity extends AppCompatActivity {
             ArrayAdapter<Medicine> adapter = new ArrayAdapter<>(this,R.layout.one_suggest_item,matchedMedicines);
             suggestions.setAdapter(adapter);
 
+        }
+
+        searchButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                List<Pharmacy> results = new ArrayList<Pharmacy>();
+
+                String pattern = suggestions.getText().toString();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                for (int i = 0;i<listOfPharmaciesWithMedicines.size();i++){
+                    List<Medicine> listOfMedicines = listOfPharmaciesWithMedicines.get(i).getMedicines();
+                    for (int j = 0;j<listOfMedicines.size();j++){
+                        if (listOfMedicines.get(j).getName().toString().equals(pattern)){
+                            if (listOfMedicines.get(j).getAvailable()){
+                                results.add(listOfPharmaciesWithMedicines.get(i).getPharmacy());
+                            }
+                        }
+                    }
+                }
+                pharmacyToMark = results;
+            }
+        });
+
+
+    }
 
 
 
+    private class GetPharmaciesWithMedicineTask extends AsyncTask<Void, Void, Void>{
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+            listOfPharmaciesWithMedicines = pharmacyService.getPharmacyWithMedicines();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
     }
 
