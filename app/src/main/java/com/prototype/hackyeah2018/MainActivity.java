@@ -1,9 +1,15 @@
 package com.prototype.hackyeah2018;
 
-import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.MapsInitializer;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.prototype.hackyeah2018.db.AppDatabase;
 import com.prototype.hackyeah2018.inserter.MedicineGenerator;
 import com.prototype.hackyeah2018.model.Coordinate;
@@ -16,10 +22,13 @@ import com.prototype.hackyeah2018.service.IPharmacyService;
 import com.prototype.hackyeah2018.service.MedicineService;
 import com.prototype.hackyeah2018.service.PharmacyService;
 
+import android.Manifest.permission;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -39,10 +48,14 @@ public class MainActivity extends AppCompatActivity {
 
     private List<PharmacyWithMedicines> listOfPharmaciesWithMedicines = null;
 
+    private GoogleMap googleMap;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        initMapView(savedInstanceState);
 
         database = AppDatabase.getInstance(this);
         medicineService = new MedicineService(database.getMedicineDao());
@@ -72,33 +85,31 @@ public class MainActivity extends AppCompatActivity {
         takePicture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(getApplicationContext(),ReaderCaptureActivity.class);
+                Intent intent = new Intent(getApplicationContext(), ReaderCaptureActivity.class);
                 matchedMedicines.clear();
                 startActivity(intent);
             }
         });
 
-        if (getIntent().getStringArrayExtra("Array")!=null){
+        if (getIntent().getStringArrayExtra("Array") != null) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             String[] textArray = getIntent().getStringArrayExtra("Array");
-            for (int i = 0;i<textArray.length;i++){
-                for (int j = 0 ;j<medicineList.size();j++){
+            for (int i = 0; i < textArray.length; i++) {
+                for (int j = 0; j < medicineList.size(); j++) {
                     System.out.println("MainActivity: " + i + " " + textArray[i]);
-                    if (medicineList.get(j).getName().toLowerCase().contains(textArray[i].toLowerCase())){
+                    if (medicineList.get(j).getName().toLowerCase().contains(textArray[i].toLowerCase())) {
                         System.out.println("Found: " + textArray[i] + " in " + medicineList.get(j).getName());
                         matchedMedicines.add(medicineList.get(j));
                     }
                 }
             }
-            ArrayAdapter<Medicine> adapter = new ArrayAdapter<>(this,R.layout.one_suggest_item,matchedMedicines);
+            ArrayAdapter<Medicine> adapter = new ArrayAdapter<>(this, R.layout.one_suggest_item, matchedMedicines);
             suggestions.setAdapter(adapter);
-
         }
-
         searchButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
@@ -124,24 +135,72 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
 
+    private void initMapView(Bundle savedInstanceState) {
+        MapView mapView = findViewById(R.id.pharmacyMapView);
+        mapView.onCreate(savedInstanceState);
+        mapView.onResume();
+
+        try {
+            MapsInitializer.initialize(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                MainActivity.this.googleMap = googleMap;
+                if (ActivityCompat.checkSelfPermission(MainActivity.this,
+                        permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat
+                        .checkSelfPermission(MainActivity.this,
+                                permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
+                googleMap.setMyLocationEnabled(true);
+
+                for (LatLng latLng : getMapPinsLocations()) {
+                    googleMap.addMarker(new MarkerOptions().position(latLng));
+                }
+            }
+        });
+    }
+
+    private List<LatLng> getMapPinsLocations() {
+        List<LatLng> latLngs = new ArrayList<>();
+        for (Pharmacy pharmacy : loadPharmacies()) {
+            latLngs.add(new LatLng(pharmacy.getCoordinate().getLattitude(), pharmacy.getCoordinate().getLongtitude()));
+        }
+
+        return latLngs;
     }
 
 
+        private class GetPharmaciesWithMedicineTask extends AsyncTask<Void, Void, Void>{
 
-    private class GetPharmaciesWithMedicineTask extends AsyncTask<Void, Void, Void>{
+            @Override
+            protected Void doInBackground(Void... voids) {
 
-        @Override
-        protected Void doInBackground(Void... voids) {
-
-            listOfPharmaciesWithMedicines = pharmacyService.getPharmacyWithMedicines();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                listOfPharmaciesWithMedicines = pharmacyService.getPharmacyWithMedicines();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return null;
             }
-            return null;
         }
+
+    private List<Pharmacy> loadPharmacies() {
+        return Collections.emptyList();
     }
 
     private class GetAllMedicinesTask extends AsyncTask<Void, Void, Void>{
@@ -180,15 +239,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void fillDatabase() {
-            Pharmacy pharmacy = new Pharmacy();
-            pharmacy.setId(1L);
-            pharmacy.setName("DOZ");
-            pharmacy.setCoordinate(new Coordinate(1.0, 1.0));
 
-            List<Medicine> medicines = MedicineGenerator.getMedicines(pharmacy);
+            Pharmacy p1 = new Pharmacy();
+            p1.setId(1L);
+            p1.setName("DOZ1");
+            p1.setCoordinate(new Coordinate(52.2901142, 20.9818041));
 
-            pharmacyService.insertPharmacy(pharmacy);
-            medicineService.insertMedicines(medicines);
+            List<Medicine> m1 = MedicineGenerator.getMedicines(p1);
+
+            Pharmacy p2 = new Pharmacy();
+            p2.setId(2L);
+            p2.setName("DOZ2");
+            p2.setCoordinate(new Coordinate(52.2901038, 20.9818041));
+
+            List<Medicine> m2 = MedicineGenerator.getMedicines(p1);
+
+            pharmacyService.insertPharmacy(p1);
+            medicineService.insertMedicines(m1.subList(0, m1.size() / 2));
+
+            pharmacyService.insertPharmacy(p2);
+            medicineService.insertMedicines(m2.subList(m2.size() / 2, m2.size() - 1));
         }
     }
 }

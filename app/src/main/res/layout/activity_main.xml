@@ -42,6 +42,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="0.9">
+        <com.google.android.gms.maps.MapView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" android:id="@+id/pharmacyMapView"/>
     </FrameLayout>
 
 </LinearLayout>
