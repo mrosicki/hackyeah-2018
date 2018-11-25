@@ -251,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
             p2.setName("DOZ2");
             p2.setCoordinate(new Coordinate(52.2901038, 20.9818041));
 
-            List<Medicine> m2 = MedicineGenerator.getMedicines(p1);
+            List<Medicine> m2 = MedicineGenerator.getMedicines(p2);
 
             pharmacyService.insertPharmacy(p1);
             medicineService.insertMedicines(m1.subList(0, m1.size() / 2));
